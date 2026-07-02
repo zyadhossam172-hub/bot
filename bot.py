@@ -1,45 +1,43 @@
 import telebot
 import requests
 
-# التوكنات الخاصة بك التي قمت بإرسالها
+# التوكنات الخاصة بك والمفتاح الجديد من Groq
 BOT_TOKEN = "8350793522:AAHbEDNEFruQFiNm-7S73pioYmWxYTZSbQw"
-GEMINI_API_KEY = "AQ.Ab8RN6IKjnybhjuwrRyBdejR1FjLgQJB6jueWdazOVHL9TABFQ"
+GROQ_API_KEY = "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"
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# دالة لإرسال الكلام لـ Gemini AI والمطالبة بالرد
-def ask_gemini(user_message):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+def ask_groq(user_message):
+    url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "contents": [{
-            "parts": [{"text": user_message}]
-        }]
+        "model": "llama-3.1-8b-instant",  # نموذج سريع جداً وذكي
+        "messages": [{"role": "user", "content": user_message}]
     }
     
     try:
         response = requests.post(url, json=payload, headers=headers)
         if response.status_code == 200:
             result = response.json()
-            return result['candidates'][0]['content']['parts'][0]['text']
+            return result['choices'][0]['message']['content']
         else:
-            return "عذراً، حدث خطأ في الاتصال بـ Gemini AI."
+            return "عذراً، حدث خطأ في الاتصال بالسيرفر."
     except Exception as e:
         return "مشكلة في الشبكة، حاول مجدداً لاحقاً."
 
-# استقبال أي رسالة نصية من المستخدم والرد عليها عبر Gemini
 @bot.message_handler(func=lambda message: True)
-def reply_with_gemini(message):
+def reply_with_groq(message):
     # إظهار أن البوت يكتب الآن (Typing...)
     bot.send_chat_action(message.chat.id, 'typing')
     
-    # إرسال الرسالة لجمناي وأخذ الرد
-    gemini_response = ask_gemini(message.text)
+    # إرسال الرسالة إلى Groq وأخذ الرد
+    response_text = ask_groq(message.text)
     
     # الرد على المستخدم في تليجرام
-    bot.reply_to(message, gemini_response)
+    bot.reply_to(message, response_text)
 
-print("البوت شغال ومربوط بـ Gemini AI...")
+print("البوت شغال ومربوط بـ Groq...")
 bot.infinity_polling()
